@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modlist — The list app for everything else.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Outfit:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================
+       Design Tokens → CSS Custom Properties
+       ========================================= */
+    :root {
+      /* ── Primitives ── */
+      /* Base */
+      --base-00:  #FFFCF0;
+      --base-50:  #F2F0E5;
+      --base-100: #E6E4D9;
+      --base-150: #DAD8CE;
+      --base-200: #CECDC3;
+      --base-300: #B7B5AC;
+      --base-400: #9F9D96;
+      --base-500: #878580;
+      --base-600: #6F6E69;
+      --base-700: #575653;
+      --base-800: #403E3C;
+      --base-850: #343331;
+      --base-900: #282726;
+      --base-950: #1C1B1A;
+      --base-1000:#100F0F;
+
+      /* Red */
+      --red-300:  #E8705F;
+      --red-600:  #AF3029;
+
+      /* Cyan */
+      --cyan-300: #5ABDAC;
+      --cyan-600: #24837B;
+
+      /* Purple */
+      --purple-300: #A699D0;
+      --purple-600: #5E409D;
+
+      /* Yellow */
+      --yellow-300: #DFB431;
+      --yellow-600: #AD8301;
+
+      /* Blue */
+      --blue-300: #66A0C8;
+      --blue-600: #205EA6;
+      --blue-800: #163B66;
+      --blue-50:  #E1ECEB;
+
+      /* Extended palette (not in token file, from Figma) */
+      --pink-dark:    #E470A8;
+      --pink-light:   #C24B86;
+      --olive-dark:   #A8AF54;
+      --olive-light:  #6D7335;
+      --orange-dark:  #EC8849;
+      --orange-light: #C86827;
+
+      /* ── Semantic — Dark (default) ── */
+      --bg:            var(--base-900);
+      --text-boldest:  var(--base-00);
+      --text-bolder:   var(--base-150);
+      --text-bold:     var(--base-300);
+      --text-subtle:   var(--base-500);
+      --text-subtler:  var(--base-700);
+
+      --accent-blue:   var(--blue-300);
+      --accent-pink:   var(--pink-dark);
+      --accent-yellow: var(--yellow-300);
+      --accent-olive:  var(--olive-dark);
+      --accent-neutral:var(--base-150);
+      --accent-orange: var(--orange-dark);
+      --accent-purple: var(--purple-300);
+      --accent-red:    var(--red-300);
+      --accent-cyan:   var(--cyan-300);
+
+      --cta-bg:        var(--blue-800);
+      --cta-text:      var(--blue-300);
+
+      /* ── Spacing ── */
+      --space-100: 8px;
+      --space-200: 12px;
+      --space-300: 16px;
+      --space-400: 20px;
+      --space-500: 24px;
+      --space-600: 32px;
+      --space-700: 40px;
+      --space-800: 48px;
+      --space-900: 64px;
+      --space-1000: 80px;
+
+      /* ── Typography ── */
+      --font-heading:   'Outfit', sans-serif;
+      --font-technical: 'JetBrains Mono', monospace;
+      --font-body:      'Outfit', sans-serif;
+
+      --size-200: 12px;
+      --size-300: 13px;
+      --size-400: 14px;
+      --size-500: 16px;
+      --size-600: 18px;
+      --size-700: 24px;
+      --size-800: 32px;
+      --size-900: 40px;
+      --size-1000: 48px;
+
+      --lh-500: 22px;
+      --lh-600: 24px;
+      --lh-800: 40px;
+
+      /* ── Radius ── */
+      --radius-square: 0;
+
+      /* ── Border ── */
+      --border-default: 2px;
+    }
+
+    /* ── Semantic — Light ── */
+    [data-theme="light"] {
+      --bg:            var(--base-00);
+      --text-boldest:  var(--base-1000);
+      --text-bolder:   var(--base-850);
+      --text-bold:     var(--base-700);
+      --text-subtle:   var(--base-500);
+      --text-subtler:  var(--base-300);
+
+      --accent-blue:   var(--blue-600);
+      --accent-pink:   var(--pink-light);
+      --accent-yellow: var(--yellow-600);
+      --accent-olive:  var(--olive-light);
+      --accent-neutral:var(--base-700);
+      --accent-orange: var(--orange-light);
+      --accent-purple: var(--purple-600);
+      --accent-red:    var(--red-600);
+      --accent-cyan:   var(--cyan-600);
+
+      --cta-bg:        var(--blue-50);
+      --cta-text:      var(--blue-600);
+    }
+
+    /* =========================================
+       Reset & Base
+       ========================================= */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text-boldest);
+      font-family: var(--font-body);
+      min-height: 100vh;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* =========================================
+       Page Layout
+       ========================================= */
+    .page {
+      width: 100%;
+      min-height: 100vh;
+      padding: var(--space-1000) var(--space-900);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-600);
+    }
+
+    /* =========================================
+       Logo
+       ========================================= */
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-toggle {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: var(--text-boldest);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.3s ease, color 0.3s ease;
+    }
+
+    .logo-toggle:hover { transform: scale(1.1); }
+    .logo-toggle:active { transform: scale(0.95); }
+
+    .logo-toggle svg {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+      transition: transform 0.5s ease;
+    }
+
+    [data-theme="light"] .logo-toggle svg {
+      transform: rotate(180deg);
+    }
+
+    .logo-wordmark {
+      font-family: var(--font-technical);
+      font-weight: 700;
+      font-size: var(--size-500);
+      line-height: var(--lh-500);
+      color: var(--text-boldest);
+      text-decoration: none;
+    }
+
+    /* =========================================
+       Hero Content
+       ========================================= */
+    .hero {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-600);
+      margin-top: auto;
+    }
+
+    /* Colored phrases */
+    .hero-phrases {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: var(--size-800);
+      line-height: var(--lh-800);
+      max-width: 834px;
+    }
+
+    .hero-phrases .s { color: var(--bg); }
+
+    .c-blue   { color: var(--accent-blue);    transition: color 0.3s ease; }
+    .c-pink   { color: var(--accent-pink);    transition: color 0.3s ease; }
+    .c-yellow { color: var(--accent-yellow);  transition: color 0.3s ease; }
+    .c-olive  { color: var(--accent-olive);   transition: color 0.3s ease; }
+    .c-neutral{ color: var(--accent-neutral); transition: color 0.3s ease; }
+    .c-orange { color: var(--accent-orange);  transition: color 0.3s ease; }
+    .c-purple { color: var(--accent-purple);  transition: color 0.3s ease; }
+    .c-red    { color: var(--accent-red);     transition: color 0.3s ease; }
+    .c-cyan   { color: var(--accent-cyan);    transition: color 0.3s ease; }
+
+    /* Tagline */
+    .hero-tagline {
+      font-family: var(--font-heading);
+      font-weight: 600;
+      font-size: var(--size-800);
+      line-height: var(--lh-800);
+      color: var(--text-boldest);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      text-decoration-thickness: var(--border-default);
+    }
+
+    /* Subtitle */
+    .hero-subtitle {
+      font-family: var(--font-body);
+      font-weight: 400;
+      font-size: var(--size-600);
+      line-height: var(--lh-600);
+      max-width: 572px;
+    }
+
+    .hero-subtitle .muted  { color: var(--text-subtle); }
+    .hero-subtitle .bright { color: var(--text-bold); }
+    .hero-tagline { text-decoration-color: var(--text-bold); }
+
+    /* CTA Badge */
+    .cta-badge {
+      display: inline-block;
+      background: var(--cta-bg);
+      font-family: var(--font-technical);
+      font-weight: 500;
+      font-size: var(--size-500);
+      line-height: 26px;
+      color: var(--cta-text);
+      text-decoration: none;
+      width: fit-content;
+    }
+
+    /* Spacer to push hero down */
+    .spacer { flex: 1; }
+
+    /* =========================================
+       Responsive — Mobile
+       ========================================= */
+    @media (max-width: 640px) {
+      .page {
+        padding: var(--space-700) var(--space-500);
+      }
+
+      .hero-phrases {
+        font-size: var(--size-700);
+        line-height: 32px;
+      }
+
+      .hero-tagline {
+        font-size: var(--size-700);
+        line-height: 32px;
+      }
+
+      .hero-subtitle {
+        font-size: var(--size-500);
+        line-height: var(--lh-500);
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <!-- Logo -->
+    <div class="logo">
+      <button class="logo-toggle" aria-label="Toggle light/dark theme">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M16 0C24.8366 0 32 7.16344 32 16C32 24.8366 24.8366 32 16 32C7.16344 32 0 24.8366 0 16C0 7.16344 7.16344 0 16 0ZM16 4C9.37258 4 4 9.37258 4 16H28C28 9.37258 22.6274 4 16 4Z" fill="currentColor"/>
+        </svg>
+      </button>
+      <span class="logo-wordmark">Modlist</span>
+    </div>
+
+    <!-- Push hero toward vertical center -->
+    <div class="spacer"></div>
+
+    <!-- Hero -->
+    <section class="hero">
+      <p class="hero-phrases"><span class="c-blue">Movies.</span><span class="s"> </span><span class="c-pink">Books in progress.</span><span class="s"> </span><span class="c-yellow">Personal records.</span><span class="s"> </span><span class="c-olive">Story ideas.</span><span class="s"> </span><span class="c-neutral">Famous sharks.</span><span class="s"> </span><span class="c-orange">Favorite Celebrities.</span><span class="s"> </span><span class="c-purple">Routines.</span><span class="s"> </span><span class="c-red">Dreams.</span><span class="s"> </span><span class="c-cyan">Obscure hot sauces.</span><span class="s"> </span><span class="c-blue">Tiny tasks.</span><span class="s"> </span><span class="c-yellow">Karaoke Songs.</span><span class="s"> </span><span class="c-pink">Disturbing fonts.</span><span class="s"> </span><span class="c-olive">Mandela effects.</span><span class="s"> </span><span class="c-purple">Restaurants.</span><span class="s"> </span><span class="c-neutral">Abandoned hobbies.</span><span class="s"> </span><span class="c-orange">Hikes.</span><span class="s"> </span><span class="c-blue">Root vegetables.</span><span class="s"> </span><span class="c-red">Stray thoughts.</span><span class="s"> </span><span class="c-cyan">Quotes.</span><span class="s"> </span><span class="c-olive">Halloween costumes.</span><span class="s"> </span><span class="c-pink">Reviews.</span><span class="s"> </span><span class="c-yellow">Gift ideas.</span><span class="s"> </span><span class="c-purple">Imaginary animals.</span><span class="s"> </span><span class="c-orange">Flashes of inspiration.</span></p>
+
+      <p class="hero-tagline">The list app for everything else.</p>
+
+      <p class="hero-subtitle">
+        <span class="muted">No discovery. No social feed. No recommendations. No one watching.</span><br>
+        <span class="bright">Just your lists, exactly how you built them.</span>
+      </p>
+
+      <a href="#" class="cta-badge">Coming soon to iOS</a>
+    </section>
+
+    <!-- Bottom breathing room -->
+    <div class="spacer"></div>
+  </main>
+
+  <script>
+    (() => {
+      const root = document.documentElement;
+      const toggle = document.querySelector('.logo-toggle');
+
+      // Seed from system preference
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+
+      toggle.addEventListener('click', () => {
+        const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        root.setAttribute('data-theme', next);
+      });
+    })();
+  </script>
+</body>
+</html>
