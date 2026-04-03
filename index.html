@@ -347,7 +347,7 @@
     <!-- Content -->
     <div class="content">
     <section class="hero">
-      <p class="hero-phrases"><span class="c-blue">Movies.</span><span class="s"> </span><span class="c-pink">Books in progress.</span><span class="s"> </span><span class="c-yellow">Personal records.</span><span class="s"> </span><span class="c-olive">Story ideas.</span><span class="s"> </span><span class="c-neutral">Famous sharks.</span><span class="s"> </span><span class="c-orange">Favorite Celebrities.</span><span class="s"> </span><span class="c-purple">Routines.</span><span class="s"> </span><span class="c-red">Dreams.</span><span class="s"> </span><span class="c-cyan">Obscure hot sauces.</span><span class="s"> </span><span class="c-blue">Tiny tasks.</span><span class="s"> </span><span class="c-yellow">Karaoke Songs.</span><span class="s"> </span><span class="c-pink">Disturbing fonts.</span><span class="s"> </span><span class="c-olive">Mandela effects.</span><span class="s"> </span><span class="c-purple">Restaurants.</span><span class="s"> </span><span class="c-neutral">Abandoned hobbies.</span><span class="s"> </span><span class="c-orange">Hikes.</span><span class="s"> </span><span class="c-blue">Root vegetables.</span><span class="s"> </span><span class="c-red">Stray thoughts.</span><span class="s"> </span><span class="c-cyan">Quotes.</span><span class="s"> </span><span class="c-olive">Halloween costumes.</span><span class="s"> </span><span class="c-pink">Reviews.</span><span class="s"> </span><span class="c-yellow">Gift ideas.</span><span class="s"> </span><span class="c-purple">Imaginary animals.</span><span class="s"> </span><span class="c-orange">Flashes of inspiration.</span></p>
+      <p class="hero-phrases"><span class="c-blue">Movies.</span><span class="s"> </span><span class="c-pink">Books in progress.</span><span class="s"> </span><span class="c-yellow">Personal records.</span><span class="s"> </span><span class="c-olive">Story ideas.</span><span class="s"> </span><span class="c-neutral">Famous sharks.</span><span class="s"> </span><span class="c-orange">Favorite Celebrities.</span><span class="s"> </span><span class="c-purple">Routines.</span><span class="s"> </span><span class="c-red">Dreams.</span><span class="s"> </span><span class="c-cyan">Obscure hot sauces.</span><span class="s"> </span><span class="c-blue">Tiny tasks.</span><span class="s"> </span><span class="c-yellow">Karaoke Songs.</span><span class="s"> </span><span class="c-pink">Favorite fonts.</span><span class="s"> </span><span class="c-olive">Mandela effects.</span><span class="s"> </span><span class="c-purple">Restaurants.</span><span class="s"> </span><span class="c-neutral">Abandoned hobbies.</span><span class="s"> </span><span class="c-orange">Hikes.</span><span class="s"> </span><span class="c-blue">Root vegetables.</span><span class="s"> </span><span class="c-red">Stray thoughts.</span><span class="s"> </span><span class="c-cyan">Quotes.</span><span class="s"> </span><span class="c-olive">Halloween costumes.</span><span class="s"> </span><span class="c-pink">Reviews.</span><span class="s"> </span><span class="c-yellow">Gift ideas.</span><span class="s"> </span><span class="c-purple">Imaginary animals.</span><span class="s"> </span><span class="c-orange">Flashes of inspiration.</span></p>
 
       <p class="hero-tagline">The list app for everything else.</p>
 
@@ -423,7 +423,15 @@
       return new Promise(resolve => {
         const duration = opts.duration || (keyframes.length / 60) * 1000;
         const a = el.animate(keyframes, { fill: 'forwards', duration, ...opts });
-        a.onfinish = () => { a.commitStyles(); a.cancel(); resolve(); };
+        a.onfinish = () => {
+          a.commitStyles();
+          a.cancel();
+          // Remove residual inline transform/opacity to avoid
+          // compositing-layer blur on static text
+          el.style.removeProperty('transform');
+          el.style.removeProperty('opacity');
+          resolve();
+        };
       });
     }
 
@@ -436,7 +444,7 @@
       'Movies.',                  'Books in progress.',       'Personal records.',
       'Story ideas.',             'Famous sharks.',           'Favorite Celebrities.',
       'Routines.',                'Dreams.',                  'Obscure hot sauces.',
-      'Tiny tasks.',              'Karaoke Songs.',           'Disturbing fonts.',
+      'Tiny tasks.',              'Karaoke Songs.',           'Favorite fonts.',
       'Mandela effects.',         'Restaurants.',             'Abandoned hobbies.',
       'Hikes.',                   'Root vegetables.',         'Stray thoughts.',
       'Quotes.',                  'Halloween costumes.',      'Reviews.',
@@ -449,7 +457,7 @@
       'Weird facts.',             'Tea flavors.',             'Documentaries.',
       'Plants to grow.',          'Film directors.',          'Perfect sandwiches.',
       'Questions without answers.', 'Things I keep forgetting.', 'Beautiful sentences.',
-      'Local haunts.',            'Near misses.',             'Perfect moments.',
+      'Local haunts.',            'Happy accidents.',             'Perfect moments.',
       'Opening scenes.',          'Board games.',             'Art I want to own.',
       'Concert memories.',        'Failed experiments.',      'Scientific curiosities.',
       'Things that made me laugh.', 'Fictional worlds.',     'Cloud formations.',
@@ -460,9 +468,9 @@
       'Alternate histories.',     'Nicknames.',               'Scents I love.',
       'Superstitions.',           'Things I never finished.', 'Favorite textures.',
       'Party themes.',            'Bucket list items.',       'Regrettable purchases.',
-      'Unsent messages.',         'Conspiracy theories.',     'Perfect days.',
-      'Revenge fantasies.',       'Lucky numbers.',           'Celebrity lookalikes.',
-      'Haunted feelings.',        'Micro-adventures.',        'Things that smell right.',
+      'Sunset spots.',         'Cozy cafés.',     'Perfect days.',
+      'Comfort meals.',       'Lucky numbers.',           'Celebrity lookalikes.',
+      'Favorite seasons.',        'Micro-adventures.',        'Things that smell right.',
       'Underrated films.',        'Mid-century fonts.',       'Maps I want.',
       'Sounds I love.',
     ];
