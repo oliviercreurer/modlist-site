@@ -169,7 +169,7 @@
       padding: var(--space-1000) var(--space-900);
       display: flex;
       flex-direction: column;
-      gap: var(--space-600);
+      justify-content: space-between;
     }
 
     /* =========================================
@@ -223,7 +223,6 @@
       display: flex;
       flex-direction: column;
       gap: var(--space-600);
-      margin-top: auto;
     }
 
     /* Colored phrases */
@@ -288,15 +287,19 @@
       width: fit-content;
     }
 
-    /* Spacer to push hero down */
-    .spacer { flex: 1; }
+    /* Content block (hero + tagline + CTA) */
+    .content {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-600);
+    }
 
     /* =========================================
        Responsive — Mobile
        ========================================= */
     @media (max-width: 640px) {
       .page {
-        padding: var(--space-800) var(--space-600);
+        padding: var(--space-1000) var(--space-600);
       }
 
       /* Logo: 24px icon, 14px/medium wordmark */
@@ -341,10 +344,8 @@
       <span class="logo-wordmark">Modlist</span>
     </div>
 
-    <!-- Push hero toward vertical center -->
-    <div class="spacer"></div>
-
-    <!-- Hero -->
+    <!-- Content -->
+    <div class="content">
     <section class="hero">
       <p class="hero-phrases"><span class="c-blue">Movies.</span><span class="s"> </span><span class="c-pink">Books in progress.</span><span class="s"> </span><span class="c-yellow">Personal records.</span><span class="s"> </span><span class="c-olive">Story ideas.</span><span class="s"> </span><span class="c-neutral">Famous sharks.</span><span class="s"> </span><span class="c-orange">Favorite Celebrities.</span><span class="s"> </span><span class="c-purple">Routines.</span><span class="s"> </span><span class="c-red">Dreams.</span><span class="s"> </span><span class="c-cyan">Obscure hot sauces.</span><span class="s"> </span><span class="c-blue">Tiny tasks.</span><span class="s"> </span><span class="c-yellow">Karaoke Songs.</span><span class="s"> </span><span class="c-pink">Disturbing fonts.</span><span class="s"> </span><span class="c-olive">Mandela effects.</span><span class="s"> </span><span class="c-purple">Restaurants.</span><span class="s"> </span><span class="c-neutral">Abandoned hobbies.</span><span class="s"> </span><span class="c-orange">Hikes.</span><span class="s"> </span><span class="c-blue">Root vegetables.</span><span class="s"> </span><span class="c-red">Stray thoughts.</span><span class="s"> </span><span class="c-cyan">Quotes.</span><span class="s"> </span><span class="c-olive">Halloween costumes.</span><span class="s"> </span><span class="c-pink">Reviews.</span><span class="s"> </span><span class="c-yellow">Gift ideas.</span><span class="s"> </span><span class="c-purple">Imaginary animals.</span><span class="s"> </span><span class="c-orange">Flashes of inspiration.</span></p>
 
@@ -357,9 +358,7 @@
 
       <a href="#" class="cta-badge">Coming soon to iOS</a>
     </section>
-
-    <!-- Bottom breathing room -->
-    <div class="spacer"></div>
+    </div>
   </main>
 
   <script>
@@ -474,8 +473,14 @@
     const shownTexts  = new Set(phraseSpans.map(s => s.textContent));
     let   available   = POOL.filter(text => !shownTexts.has(text));
 
-    // ── Lock block height to initial render ──────────────────────────────
-    let lockedHeight = container.offsetHeight;
+    // ── Lock block height to exactly 7 lines ───────────────────────────
+    const MOBILE_BP = 640;
+    function targetLines() { return window.innerWidth <= MOBILE_BP ? 10 : 7; }
+    function computeLockedHeight() {
+      const lineHeight = parseFloat(getComputedStyle(container).lineHeight);
+      return Math.round(lineHeight * targetLines());
+    }
+    let lockedHeight = computeLockedHeight();
     container.style.height = lockedHeight + 'px';
 
     // Re-lock on resize (debounced) so it adapts to viewport changes
@@ -483,8 +488,7 @@
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(() => {
-        container.style.height = 'auto';
-        lockedHeight = container.offsetHeight;
+        lockedHeight = computeLockedHeight();
         container.style.height = lockedHeight + 'px';
       }, 200);
     });
