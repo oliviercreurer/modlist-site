@@ -228,6 +228,7 @@
 
     /* Colored phrases */
     .hero-phrases {
+      overflow: hidden;
       font-family: var(--font-heading);
       font-weight: 600;
       font-size: var(--size-800);
@@ -236,6 +237,8 @@
     }
 
     .hero-phrases .s { color: var(--bg); }
+
+    .hero-phrases span[class^="c-"] { display: inline-block; }
 
     .c-blue   { color: var(--accent-blue);    transition: color 0.3s ease; }
     .c-pink   { color: var(--accent-pink);    transition: color 0.3s ease; }
@@ -373,6 +376,222 @@
         root.setAttribute('data-theme', next);
       });
     })();
+  </script>
+
+  <script type="module">
+    // ── Spring solver ────────────────────────────────────────────────────────
+    // Solves  x'' = (-stiffness * x  -  damping * x') / mass
+    // Returns an array of normalised values (0 → 1, with possible overshoot)
+    // that we map onto WAAPI keyframes.
+    //
+    // Sampled at 60 fps to keep keyframe arrays small (~20-40 frames).
+    // The browser interpolates smoothly between them on the GPU.
+
+    function solveSpring({ stiffness = 180, damping = 20, mass = 1, precision = 0.002 } = {}) {
+      const step = 1 / 60;
+      let x = -1, v = 0;
+      const frames = [0];
+
+      for (let i = 0; i < 300; i++) {   // safety cap ≈ 5 s
+        const accel = (-stiffness * x - damping * v) / mass;
+        v += accel * step;
+        x += v * step;
+        frames.push(1 + x);
+        if (Math.abs(x) < precision && Math.abs(v) < precision) break;
+      }
+      return frames;
+    }
+
+    // Pre-compute spring curves
+    const ENTER_SPRING = solveSpring({ stiffness: 170, damping: 18, mass: 1 });  // gentle bounce
+    const EXIT_SPRING  = solveSpring({ stiffness: 300, damping: 34, mass: 1 });  // crisp, no overshoot
+
+    // ── Map a spring curve onto CSS keyframes for WAAPI ──────────────────────
+    function springKeyframes(springCurve, props) {
+      return springCurve.map(t => {
+        const frame = {};
+        for (const { prop, from, to, template } of props) {
+          const v = from + (to - from) * t;
+          frame[prop] = template ? template(v) : v;
+        }
+        return frame;
+      });
+    }
+
+    // ── Animation helper ─────────────────────────────────────────────────────
+    // Duration derived from spring curve (frames / 60 fps) or explicit.
+    function anim(el, keyframes, opts = {}) {
+      return new Promise(resolve => {
+        const duration = opts.duration || (keyframes.length / 60) * 1000;
+        const a = el.animate(keyframes, { fill: 'forwards', duration, ...opts });
+        a.onfinish = () => { a.commitStyles(); a.cancel(); resolve(); };
+      });
+    }
+
+    const wait = ms => new Promise(r => setTimeout(r, ms));
+
+    // ── Full pool of list ideas ──────────────────────────────────────────────
+    // Plain text only — colors are fixed per slot in the HTML, not per phrase.
+    // The first 24 match the initial HTML; the rest are the reserve pool.
+    const POOL = [
+      'Movies.',                  'Books in progress.',       'Personal records.',
+      'Story ideas.',             'Famous sharks.',           'Favorite Celebrities.',
+      'Routines.',                'Dreams.',                  'Obscure hot sauces.',
+      'Tiny tasks.',              'Karaoke Songs.',           'Disturbing fonts.',
+      'Mandela effects.',         'Restaurants.',             'Abandoned hobbies.',
+      'Hikes.',                   'Root vegetables.',         'Stray thoughts.',
+      'Quotes.',                  'Halloween costumes.',      'Reviews.',
+      'Gift ideas.',              'Imaginary animals.',       'Flashes of inspiration.',
+      // — reserve —
+      'Bird sightings.',          'Baby names.',              'Weird dreams.',
+      'Side projects.',           'Places to visit.',         'Albums to listen to.',
+      'Recipes to try.',          'TV shows.',                'Podcasts.',
+      'Words I love.',            'Things to learn.',         'Childhood memories.',
+      'Weird facts.',             'Tea flavors.',             'Documentaries.',
+      'Plants to grow.',          'Film directors.',          'Perfect sandwiches.',
+      'Questions without answers.', 'Things I keep forgetting.', 'Beautiful sentences.',
+      'Local haunts.',            'Near misses.',             'Perfect moments.',
+      'Opening scenes.',          'Board games.',             'Art I want to own.',
+      'Concert memories.',        'Failed experiments.',      'Scientific curiosities.',
+      'Things that made me laugh.', 'Fictional worlds.',     'Cloud formations.',
+      'Good intentions.',         'Unfinished sentences.',    'Rainy day ideas.',
+      'Things I once believed.',  'Overheard conversations.', 'Fonts I love.',
+      'Dream dinner guests.',     'Books I abandoned.',       'Rules I made up.',
+      'Things worth celebrating.', 'Breakfast combinations.', 'Fictional languages.',
+      'Alternate histories.',     'Nicknames.',               'Scents I love.',
+      'Superstitions.',           'Things I never finished.', 'Favorite textures.',
+      'Party themes.',            'Bucket list items.',       'Regrettable purchases.',
+      'Unsent messages.',         'Conspiracy theories.',     'Perfect days.',
+      'Revenge fantasies.',       'Lucky numbers.',           'Celebrity lookalikes.',
+      'Haunted feelings.',        'Micro-adventures.',        'Things that smell right.',
+      'Underrated films.',        'Mid-century fonts.',       'Maps I want.',
+      'Sounds I love.',
+    ];
+
+    // ── State ────────────────────────────────────────────────────────────────
+    const phraseSpans = [...document.querySelectorAll('.hero-phrases span[class^="c-"]')];
+    const container   = document.querySelector('.hero-phrases');
+    const shownTexts  = new Set(phraseSpans.map(s => s.textContent));
+    let   available   = POOL.filter(text => !shownTexts.has(text));
+
+    // ── Lock block height to initial render ──────────────────────────────
+    let lockedHeight = container.offsetHeight;
+    container.style.height = lockedHeight + 'px';
+
+    // Re-lock on resize (debounced) so it adapts to viewport changes
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        container.style.height = 'auto';
+        lockedHeight = container.offsetHeight;
+        container.style.height = lockedHeight + 'px';
+      }, 200);
+    });
+
+    // ── FLIP: slide neighbours to new positions ────────────────────────────
+    // Uses a simple critically-damped CSS easing (no overshoot, no heavy
+    // keyframe arrays). Neighbours should never pass through their target.
+    const FLIP_DURATION = 350;
+    const FLIP_EASING   = 'cubic-bezier(0.25, 1, 0.5, 1)';  // ease-out-quart, no overshoot
+
+    function flipNeighbours(before, skip) {
+      const after = phraseSpans.map(s => s.getBoundingClientRect());
+      phraseSpans.forEach((s, i) => {
+        if (s === skip) return;
+        const dx = before[i].left - after[i].left;
+        const dy = before[i].top  - after[i].top;
+        if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+          s.animate(
+            [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0,0)' }],
+            { duration: FLIP_DURATION, easing: FLIP_EASING }
+          );
+        }
+      });
+    }
+
+    // ── Pick a candidate that won't change the line count ────────────────
+    // Tests up to `maxTries` random candidates against the locked height.
+    // Measurements happen while the span is invisible (opacity 0), so the
+    // user never sees the probing.
+    function pickCandidate(span, oldText) {
+      const maxTries = Math.min(10, available.length);
+
+      // Fisher-Yates partial shuffle for the first maxTries elements
+      const pool = [...available];
+      for (let i = 0; i < maxTries; i++) {
+        const j = i + Math.floor(Math.random() * (pool.length - i));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+
+      // Temporarily unlock height so we can measure natural reflow
+      container.style.height = 'auto';
+
+      for (let i = 0; i < maxTries; i++) {
+        span.textContent = pool[i];
+        if (container.offsetHeight === lockedHeight) {
+          span.textContent = oldText;        // restore
+          container.style.height = lockedHeight + 'px';
+          return pool[i];                    // height-safe candidate
+        }
+      }
+
+      // No perfect match — fall back to the first candidate
+      span.textContent = oldText;
+      container.style.height = lockedHeight + 'px';
+      return pool[0];
+    }
+
+    // ── Swap one random visible phrase with one from the reserve pool ─────────
+    async function swapOne() {
+      if (available.length === 0) return;
+
+      const spanIdx  = Math.floor(Math.random() * phraseSpans.length);
+      const span     = phraseSpans[spanIdx];
+      const oldText = span.textContent;
+
+      // 1. Pick candidate BEFORE exit (synchronous, no visual flash)
+      const newText = pickCandidate(span, oldText);
+      available.splice(available.indexOf(newText), 1);
+      available.push(oldText);
+      shownTexts.delete(oldText);
+      shownTexts.add(newText);
+
+      // 2. Exit — fast 150ms fade+blur (no spring, just crisp disappearance)
+      await anim(span, [
+        { opacity: 1, filter: 'blur(0px)', transform: 'translateY(0)' },
+        { opacity: 0, filter: 'blur(4px)', transform: 'translateY(-6px)' },
+      ], { duration: 150, easing: 'ease-in' });
+
+      // 3. Clear exit styles, FLIP snapshot, swap, play — all immediate
+      span.style.transform = '';
+      span.style.filter    = '';
+      const before = phraseSpans.map(s => s.getBoundingClientRect());
+      span.textContent   = newText;
+      span.style.opacity = '0';
+      flipNeighbours(before, span);
+
+      // 4. Enter — spring-driven blur in (starts almost immediately)
+      span.style.opacity = '';
+      const enterFrames = springKeyframes(ENTER_SPRING, [
+        { prop: 'opacity',   from: 0, to: 1 },
+        { prop: 'filter',    from: 4, to: 0, template: v => `blur(${Math.max(0, v)}px)` },
+        { prop: 'transform', from: 8, to: 0, template: v => `translateY(${v}px)` },
+      ]);
+      await anim(span, enterFrames);
+    }
+
+    // ── Schedule: calm, irregular cadence ────────────────────────────────────
+    function scheduleNext() {
+      const delay = 3200 + Math.random() * 2400; // 3.2 – 5.6 s
+      setTimeout(async () => {
+        await swapOne();
+        scheduleNext();
+      }, delay);
+    }
+
+    // Short pause before the first swap so the page settles
+    setTimeout(scheduleNext, 1800);
   </script>
 </body>
 </html>
