@@ -514,10 +514,11 @@
         const dx = before[i].left - after[i].left;
         const dy = before[i].top  - after[i].top;
         if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
-          s.animate(
-            [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0,0)' }],
+          const a = s.animate(
+            [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }],
             { duration: FLIP_DURATION, easing: FLIP_EASING }
           );
+          a.onfinish = () => { a.cancel(); s.style.removeProperty('transform'); };
         }
       });
     }
@@ -569,26 +570,23 @@
       shownTexts.delete(oldText);
       shownTexts.add(newText);
 
-      // 2. Exit — fast 150ms fade+blur (no spring, just crisp disappearance)
+      // 2. Exit — fast 150ms fade out
       await anim(span, [
-        { opacity: 1, filter: 'blur(0px)', transform: 'translateY(0)' },
-        { opacity: 0, filter: 'blur(4px)', transform: 'translateY(-6px)' },
+        { opacity: 1 },
+        { opacity: 0 },
       ], { duration: 150, easing: 'ease-in' });
 
-      // 3. Clear exit styles, FLIP snapshot, swap, play — all immediate
-      span.style.transform = '';
-      span.style.filter    = '';
+      // 3. FLIP snapshot, swap text, play neighbours
       const before = phraseSpans.map(s => s.getBoundingClientRect());
       span.textContent   = newText;
       span.style.opacity = '0';
       flipNeighbours(before, span);
 
-      // 4. Enter — spring-driven blur in (starts almost immediately)
+      // 4. Enter — spring-driven fade + slide in (no blur/filter)
       span.style.opacity = '';
       const enterFrames = springKeyframes(ENTER_SPRING, [
         { prop: 'opacity',   from: 0, to: 1 },
-        { prop: 'filter',    from: 4, to: 0, template: v => `blur(${Math.max(0, v)}px)` },
-        { prop: 'transform', from: 8, to: 0, template: v => `translateY(${v}px)` },
+        { prop: 'transform', from: 0.25, to: 0, template: v => `translateY(${v}em)` },
       ]);
       await anim(span, enterFrames);
     }
